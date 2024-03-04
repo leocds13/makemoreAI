@@ -3,12 +3,17 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[[source]]
+url = "https://download.pytorch.org/whl/cu118"
+verify_ssl = true
+name = "downloadpytorch"
+
 [packages]
 requests = "*"
 matplotlib = "*"
-torch = "*"
-torchvision = "*"
-torchaudio = "*"
+torch = {version = "*", index = "downloadpytorch"}
+torchaudio = {version = "*", index = "downloadpytorch"}
+torchvision = {version = "*", index = "downloadpytorch"}
 
 [dev-packages]
 ipykernel = "*"

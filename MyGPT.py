@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 import time
+import os
 
 batch_size = 64
 block_size = 256
@@ -14,8 +15,9 @@ n_emb = 384
 sa_num_heads = 6
 n_layer = 6
 dropout = 0.2
-
+# print(torch.version.cuda)
 print(device)
+# exit()
 
 torch.manual_seed(1337)
 
@@ -186,30 +188,36 @@ print(sum([p.nelement() for p in parameters]))
 # exit()
 m = model.to(device)
 
-optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+module_file = "MyGPT_model.mdl"
+if os.path.isfile(module_file):
+    model.load_state_dict(torch.load(module_file))
+    model.eval()
+    m = model.to(device)
+else:
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
-start = time.time()
+    start = time.time()
 
-for iter in range(max_iters):
+    for iter in range(max_iters):
 
-    # every once in while wvaluate the loss on train and val sets
-    if iter % eval_internal == 0:
-        losses = estimate_loss()
-        print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+        # every once in while wvaluate the loss on train and val sets
+        if iter % eval_internal == 0:
+            losses = estimate_loss()
+            print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
+            point = time.time()
+            print(point - start)
 
-    # sample a batch od data
-    xb, yb = get_batch('train')
+        # sample a batch od data
+        xb, yb = get_batch('train')
 
-    # evaluate the loss
-    logits, loss = model(xb, yb)
-    optimizer.zero_grad(set_to_none=True)
-    loss.backward()
-    optimizer.step()
+        # evaluate the loss
+        logits, loss = model(xb, yb)
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
 
-    # if iter % 10 == 0:
-    print(iter)
-    point = time.time()
-    print(start - point)
+        # break
+    torch.save(model.state_dict(), module_file)
 
 context = torch.zeros((1,1), dtype=torch.long, device=device)
-print(decode(m.generate(torch.zeros((1,1), dtype=torch.long), max_new_tokens=300)[0].tolist()))
+print(decode(m.generate(context, max_new_tokens=1300)[0].tolist()))
